@@ -2,6 +2,7 @@
 
 const form = document.querySelector('.form');
 const containerWorkouts = document.querySelector('.workouts');
+const deleteBtn = document.querySelector('.workout__delete');
 const inputType = document.querySelector('.form__input--type');
 const inputDistance = document.querySelector('.form__input--distance');
 const inputDuration = document.querySelector('.form__input--duration');
@@ -70,6 +71,7 @@ class App {
   #mapEvent;
   #mapZoomLevel = 13;
   #workouts = [];
+  #markers = [];
 
   constructor() {
     // Get user's position
@@ -81,7 +83,12 @@ class App {
     // Attach event handlers
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
-    containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
+    containerWorkouts.addEventListener('click', e => {
+      if (e.target.classList.contains('workout__delete'))
+        this._deleteWorkout(e);
+      else this._moveToPopup(e);
+    });
+    // deleteBtn.addEventListener('click', this._deleteWorkout.bind(this));
   }
 
   _getPosition() {
@@ -199,8 +206,12 @@ class App {
     this._setLocalStorage();
   }
 
+  _findWorkout(workoutEl) {
+    return this.#workouts.find(work => work.id === workoutEl.dataset.id);
+  }
+
   _renderWorkoutMarker(workout) {
-    L.marker(workout.coords)
+    const marker = L.marker(workout.coords)
       .addTo(this.#map)
       .bindPopup(
         L.popup({
@@ -215,6 +226,8 @@ class App {
         `${workout.type === 'running' ? '🏃‍♂️' : '🚴‍♀️'} ${workout.description}`
       )
       .openPopup();
+
+    this.#markers.push(marker);
   }
 
   _renderWorkoutList(workout) {
@@ -223,6 +236,7 @@ class App {
     let html = `
       <li class="workout workout--${workout.type}" data-id="${workout.id}">
         <h2 class="workout__title">${workout.description}</h2>
+        <div class="workout__delete">✖</div>
         <div class="workout__details">
           <span class="workout__icon">${isRunning('🏃‍♂️', '🚴‍♀️')}</span>
           <span class="workout__value">${workout.distance}</span>
@@ -260,9 +274,7 @@ class App {
 
     if (!workoutEl) return;
 
-    const workout = this.#workouts.find(
-      work => work.id === workoutEl.dataset.id
-    );
+    const workout = this._findWorkout(workoutEl);
 
     this.#map.setView(workout.coords, this.#mapZoomLevel, {
       animate: true,
@@ -289,6 +301,29 @@ class App {
   reset() {
     localStorage.removeItem('workouts');
     location.reload();
+  }
+
+  _deleteWorkout(e) {
+    const workoutEl = e.target.closest('.workout');
+
+    const workout = this._findWorkout(workoutEl);
+
+    const workoutIndex = this.#workouts.findIndex(
+      work => workout.id === work.id
+    );
+
+    // Find and remove popup on map
+    this.#markers.find((_, i) => i === workoutIndex).remove();
+    // Remove workout HTML element
+    workoutEl.remove();
+    // Delete marker from array
+    this.#markers = this.#markers.filter((_, i) => i !== workoutIndex);
+    // Delete workout from array
+    this.#workouts = this.#workouts.filter(
+      item => item.id !== workoutEl.dataset.id
+    );
+    // Update local storage
+    this._setLocalStorage();
   }
 }
 
