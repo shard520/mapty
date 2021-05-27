@@ -88,7 +88,6 @@ class App {
         this._deleteWorkout(e);
       else this._moveToPopup(e);
     });
-    // deleteBtn.addEventListener('click', this._deleteWorkout.bind(this));
   }
 
   _getPosition() {
@@ -295,7 +294,11 @@ class App {
 
     this.#workouts.forEach(work => {
       this._renderWorkoutList(work);
+      if (work.type === 'running') work.__proto__ = Running.prototype;
+      if (work.type === 'cycling') work.__proto__ = Cycling.prototype;
     });
+
+    console.log(this.#workouts);
   }
 
   reset() {
