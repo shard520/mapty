@@ -239,9 +239,9 @@ class App {
     let html = `
       <li class="workout workout--${workout.type}" data-id="${workout.id}">
         <h2 class="workout__title">${workout.description}</h2>
-        <div class="workout__settings workout__settings--move"><svg class="icon"><use xlink:href="/icons.svg#icon-location"></use></svg></div>
-        <div class="workout__settings workout__settings--edit"><svg class="icon"><use xlink:href="/icons.svg#icon-pencil"></use></svg></div>
-        <div class="workout__settings workout__settings--delete"><svg class="icon"><use xlink:href="/icons.svg#icon-cross"></use></svg></div>
+        <div class="workout__settings workout__settings--move"><svg class="icon"><use xlink:href="./icons.svg#icon-location"></use></svg></div>
+        <div class="workout__settings workout__settings--edit"><svg class="icon"><use xlink:href="./icons.svg#icon-pencil"></use></svg></div>
+        <div class="workout__settings workout__settings--delete"><svg class="icon"><use xlink:href="./icons.svg#icon-cross"></use></svg></div>
         <div class="workout__details">
           <span class="workout__icon">${isRunning('🏃‍♂️', '🚴‍♀️')}</span>
           <span class="workout__value">${workout.distance}</span>
