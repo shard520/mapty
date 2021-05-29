@@ -71,7 +71,6 @@ a:visited {
   border-radius: 5px;
   padding: 1.5rem 2.25rem;
   margin-bottom: 1.75rem;
-  cursor: pointer;
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -90,17 +89,32 @@ a:visited {
   grid-column: 1 / -1;
 }
 
-.workout__delete {
+.workout__settings--delete {
   position: absolute;
-  top: 0;
-  right: -0.2rem;
-  font-size: 1.6rem;
-  margin-right: 0.7rem;
-  transition: color 0.2s;
+  top: 15px;
+  right: 15px;
 }
 
-.workout__delete:hover {
-  color: var(--color-light--1);
+.workout__settings--edit {
+  position: absolute;
+  top: 15px;
+  right: 45px;
+}
+
+.workout__settings--move {
+  position: absolute;
+  top: 15px;
+  right: 75px;
+}
+
+.workout__settings > .icon {
+  transition: color 0.2s;
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: var(--color-light--2);
+}
+.workout__settings:hover > .icon {
+  fill: var(--color-light--1);
 }
 
 .workout__details {

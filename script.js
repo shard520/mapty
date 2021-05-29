@@ -69,7 +69,7 @@ class Cycling extends Workout {
 class App {
   #map;
   #mapEvent;
-  #mapZoomLevel = 13;
+  #mapZoomLevel = 12;
   #workouts = [];
   #markers = [];
 
@@ -83,10 +83,14 @@ class App {
     // Attach event handlers
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
-    containerWorkouts.addEventListener('click', e => {
-      if (e.target.classList.contains('workout__delete'))
-        this._deleteWorkout(e);
-      else this._moveToPopup(e);
+    containerWorkouts.addEventListener(
+      'click',
+      this._workoutHandler.bind(this)
+    );
+    containerWorkouts.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        this._updateWorkout(e);
+      }
     });
   }
 
@@ -235,7 +239,9 @@ class App {
     let html = `
       <li class="workout workout--${workout.type}" data-id="${workout.id}">
         <h2 class="workout__title">${workout.description}</h2>
-        <div class="workout__delete">✖</div>
+        <div class="workout__settings workout__settings--move"><svg class="icon"><use xlink:href="/icons.svg#icon-location"></use></svg></div>
+        <div class="workout__settings workout__settings--edit"><svg class="icon"><use xlink:href="/icons.svg#icon-pencil"></use></svg></div>
+        <div class="workout__settings workout__settings--delete"><svg class="icon"><use xlink:href="/icons.svg#icon-cross"></use></svg></div>
         <div class="workout__details">
           <span class="workout__icon">${isRunning('🏃‍♂️', '🚴‍♀️')}</span>
           <span class="workout__value">${workout.distance}</span>
@@ -268,19 +274,6 @@ class App {
     form.insertAdjacentHTML('afterend', html);
   }
 
-  _moveToPopup(e) {
-    const workoutEl = e.target.closest('.workout');
-
-    if (!workoutEl) return;
-
-    const workout = this._findWorkout(workoutEl);
-
-    this.#map.setView(workout.coords, this.#mapZoomLevel, {
-      animate: true,
-      pan: { duration: 1 },
-    });
-  }
-
   _setLocalStorage() {
     localStorage.setItem('workouts', JSON.stringify(this.#workouts));
   }
@@ -292,13 +285,37 @@ class App {
 
     this.#workouts = data;
 
+    // Render each workout in the list and re-link prototype from original class
     this.#workouts.forEach(work => {
       this._renderWorkoutList(work);
       if (work.type === 'running') work.__proto__ = Running.prototype;
       if (work.type === 'cycling') work.__proto__ = Cycling.prototype;
     });
+  }
 
-    console.log(this.#workouts);
+  _workoutHandler(e) {
+    const workoutEl = e.target.closest('.workout');
+
+    const setting = e.target.closest('.workout__settings');
+    if (!setting) return;
+
+    if (setting.classList.contains('workout__settings--delete'))
+      this._deleteWorkout(workoutEl);
+
+    if (setting.classList.contains('workout__settings--move'))
+      this._moveToPopup(workoutEl);
+
+    if (setting.classList.contains('workout__settings--edit'))
+      this._editWorkoutFields(workoutEl);
+  }
+
+  _moveToPopup(workoutEl) {
+    const workout = this._findWorkout(workoutEl);
+
+    this.#map.setView(workout.coords, this.#mapZoomLevel, {
+      animate: true,
+      pan: { duration: 1 },
+    });
   }
 
   reset() {
@@ -306,9 +323,7 @@ class App {
     location.reload();
   }
 
-  _deleteWorkout(e) {
-    const workoutEl = e.target.closest('.workout');
-
+  _deleteWorkout(workoutEl) {
     const workout = this._findWorkout(workoutEl);
 
     const workoutIndex = this.#workouts.findIndex(
@@ -327,6 +342,64 @@ class App {
     );
     // Update local storage
     this._setLocalStorage();
+  }
+
+  _editWorkoutFields(workoutEl) {
+    const details = workoutEl.querySelectorAll('.workout__details');
+
+    details.forEach((el, i) => {
+      // Skip speed field
+      if (i === 2) return;
+
+      const valueEl = el.querySelector('.workout__value');
+
+      const value = valueEl.textContent;
+      // Replace span elements with input elements with input value set from span value
+      valueEl.innerHTML = `<input 
+        type="text"
+        class="workout__value form__input"
+        value="${value}"
+        style="width: 3.5rem; padding: 0rem; text-align: center;"
+      >`;
+    });
+  }
+
+  _updateWorkout(e) {
+    const workoutEl = e.target.closest('.workout');
+
+    const workout = this._findWorkout(workoutEl);
+
+    const [distance, duration, paceOrElevation] = document.querySelectorAll(
+      '.workout__value.form__input'
+    );
+
+    // Update current workout with new values
+    workout.distance = +distance.value;
+    workout.duration = +duration.value;
+    if (workout.type === 'running') {
+      workout.cadence = +paceOrElevation.value;
+      workout.calcPace();
+    }
+    if (workout.type === 'cycling') {
+      workout.elevationGain = +paceOrElevation.value;
+      workout.calcSpeed();
+    }
+    // Find index of current workout in workouts array
+    const workoutIndex = this.#workouts.findIndex(
+      work => work.id === workout.id
+    );
+
+    // Replace old workout entry with edited workout
+    this.#workouts[workoutIndex] = workout;
+
+    // Remove list of workouts
+    document.querySelectorAll('.workout').forEach(workout => workout.remove());
+
+    // Update local storage
+    this._setLocalStorage();
+
+    // Restore workouts list from local storage
+    this._getLocalStorage();
   }
 }
 
