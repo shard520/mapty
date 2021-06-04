@@ -34,7 +34,26 @@
       <img src="logo.png" alt="Logo" class="logo" />
 
       <ul class="workouts">
-        <form class="form hidden">
+        <li class="sort__container form hidden">
+          <div class="sort__choice">
+            <label for="sortBy" class="sort__label">Sort by:</label>
+            <select name="sort" id="sortBy" class="sort__select form__input">
+              <option value="">Please select an option...</option>
+              <option value="date asc">Date (newest)</option>
+              <option value="date desc">Date (oldest)</option>
+              <option value="distance asc">Distance (longest)</option>
+              <option value="distance desc">Distance (shortest)</option>
+              <option value="duration asc">duration (longest)</option>
+              <option value="duration desc">duration (shortest)</option>
+              <option value="speed asc">Speed (fastest)</option>
+              <option value="speed desc">Speed (slowest)</option>
+            </select>
+          </div>
+
+          <button class="sort__btn" id="clearAll">Clear All</button>
+        </li>
+
+        <form class="form hidden" id="form">
           <div class="form__row">
             <label class="form__label">Type</label>
             <select class="form__input form__input--type">

@@ -198,6 +198,43 @@ a:visited {
   display: none;
 }
 
+.sort__container {
+  padding: 1.5rem;
+  margin-bottom: 1.75rem;
+  position: relative;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 0.5rem;
+  place-content: center;
+  height: 6rem;
+}
+
+.sort__label {
+  font-size: 1.6rem;
+  margin-right: 0.5rem;
+}
+
+.sort__select.form__input {
+  width: auto;
+}
+
+.sort__btn {
+  font: inherit;
+  font-size: 1rem;
+  background-image: linear-gradient(
+    to right,
+    var(--color-light--3),
+    var(--color-light--2)
+  );
+
+  border: none;
+  border-radius: 5px;
+  max-height: 40px;
+  box-shadow: inset -5px -5px 5px var(--color-light--1);
+  width: 80%;
+  justify-self: center;
+}
+
 .copyright {
   margin-top: auto;
   font-size: 1.3rem;
