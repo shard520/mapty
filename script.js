@@ -9,6 +9,8 @@ const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
 const sortContainer = document.querySelector('.sort__container');
 const deleteAllBtn = document.querySelector('#clearAll');
+const modal = document.querySelector('.modal');
+const overlay = document.querySelector('.overlay');
 
 class Workout {
   date = new Date();
@@ -77,6 +79,7 @@ class App {
     // Attach event handlers
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
+
     containerWorkouts.addEventListener(
       'click',
       this._workoutHandler.bind(this)
@@ -86,21 +89,31 @@ class App {
         this._updateWorkout(e);
       }
     });
+
     sortContainer.addEventListener('change', this._sortHandler.bind(this));
     deleteAllBtn.addEventListener('click', this._deleteAllConfirm.bind(this));
+
+    overlay.addEventListener('click', this._closeModal);
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        this._closeModal();
+      }
+    });
   }
 
   _getPosition() {
     // Access current location
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        this._loadMap.bind(this),
-        function () {
-          alert('Could not get your position.');
-        }
-      );
+      navigator.geolocation.getCurrentPosition(this._loadMap.bind(this), () => {
+        this._setModalContent({
+          header: 'Could not get your position.',
+        });
+      });
     } else {
-      alert('Your browser does not support location features.');
+      return this._setModalContent({
+        header: 'Your browser does not support location features.',
+      });
     }
   }
 
@@ -170,8 +183,11 @@ class App {
       if (
         !validInputs(distance, duration, cadence) ||
         !allPositive(distance, duration, cadence)
-      )
-        return alert('Inputs have to be positive numbers!');
+      ) {
+        return this._setModalContent({
+          header: 'Inputs have to be positive numbers!',
+        });
+      }
 
       workout = new Running([lat, lng], distance, duration, cadence);
     }
@@ -183,8 +199,11 @@ class App {
       if (
         !validInputs(distance, duration, elevation) ||
         !allPositive(distance, duration)
-      )
-        return alert('Inputs have to be positive numbers!');
+      ) {
+        return this._setModalContent({
+          header: 'Inputs have to be positive numbers!',
+        });
+      }
 
       workout = new Cycling([lat, lng], distance, duration, elevation);
     }
@@ -266,8 +285,8 @@ class App {
 
     form.insertAdjacentHTML('afterend', html);
 
-    // Show sort and delete
-    sortContainer.classList.remove('hidden');
+    // Show sort and delete if more than 1 workout
+    if (this.#workouts.length > 1) sortContainer.classList.remove('hidden');
   }
 
   _newWorkoutList() {
@@ -328,6 +347,17 @@ class App {
       this._editWorkoutFields(workoutEl);
   }
 
+  _resetHandler(e) {
+    if (e.target.innerText === 'OK') this._reset();
+
+    if (e.target.innerText === 'Cancel') {
+      this._closeModal();
+      modal.removeEventListener('click', this._resetHandler);
+    }
+
+    return;
+  }
+
   _sortHandler(e) {
     const sortBy = e.target.value;
     if (!sortBy) return;
@@ -347,12 +377,15 @@ class App {
   }
 
   _deleteAllConfirm() {
-    const confirm = window.confirm(
-      "Are you sure you want to delete all workouts? This can't be undone"
-    );
+    this._setModalContent({
+      header: 'Are you sure you want to delete all workouts?',
+      text: "This can't be undone!",
+      cancel: true,
+    });
 
-    if (confirm) this.reset();
-    else return;
+    // Bind this so removeEventListener works in _resetHandler
+    this._resetHandler = this._resetHandler.bind(this);
+    modal.addEventListener('click', this._resetHandler);
   }
 
   _deleteWorkout(workoutEl) {
@@ -364,16 +397,23 @@ class App {
 
     // Find and remove popup on map
     this.#markers.find((_, i) => i === workoutIndex).remove();
+
     // Remove workout HTML element
     workoutEl.remove();
+
     // Delete marker from array
     this.#markers = this.#markers.filter((_, i) => i !== workoutIndex);
+
     // Delete workout from array
     this.#workouts = this.#workouts.filter(
       item => item.id !== workoutEl.dataset.id
     );
+
     // Update local storage
     this._setLocalStorage();
+
+    // Remove sort container if less than 2 workouts
+    if (this.#workouts.length <= 1) sortContainer.classList.add('hidden');
   }
 
   _editWorkoutFields(workoutEl) {
@@ -430,7 +470,57 @@ class App {
     this._newWorkoutList();
   }
 
-  reset() {
+  _setModalContent(content) {
+    const { header, text, cancel } = content;
+
+    modal.innerHTML = `
+    <button class="btn--close-modal">&times;</button>
+    <h2 class="modal__header">${header}</h2>
+    <p class="modal__text">${text ? text : ''}</p>
+    <button class="btn btn--confirm">OK</button>
+    `;
+
+    // Add listener to close modal from close button
+    document
+      .querySelector('.btn--close-modal')
+      .addEventListener('click', this._closeModal);
+
+    // Insert cancel button if supplied as argument - handle in calling function
+    if (cancel)
+      document
+        .querySelector('.modal.hidden')
+        .insertAdjacentHTML(
+          'beforeend',
+          `<button class="btn btn--cancel">Cancel</button>`
+        );
+
+    // If no cancel button, set confirm button to close modal
+    if (!cancel) {
+      document
+        .querySelector('.btn--confirm')
+        .addEventListener('click', this._closeModal);
+    }
+
+    this._openModal();
+  }
+
+  _openModal() {
+    modal.classList.remove('hidden');
+    overlay.classList.remove('hidden');
+  }
+
+  _closeModal() {
+    modal.classList.add('hidden');
+    overlay.classList.add('hidden');
+    const cancelBtn = document.querySelector('.btn--cancel');
+    // If cancel button is in modal, remove after hidden transition has finished
+    if (cancelBtn)
+      setTimeout(() => {
+        cancelBtn.remove();
+      }, 200);
+  }
+
+  _reset() {
     localStorage.removeItem('workouts');
     location.reload();
   }
